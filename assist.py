@@ -100,13 +100,16 @@ def play_sound(file_path):
     mixer.music.play()
 
 def TTS(text):
-    speech_file_path = generate_tts(text, "speech.mp3")
-    play_sound(speech_file_path)
-    while mixer.music.get_busy():
-        time.sleep(1)
-    mixer.music.unload()
-    os.remove(speech_file_path)
-    return "done"
+    if len(text) > 1:
+        speech_file_path = generate_tts(text, "speech.mp3")
+        play_sound(speech_file_path)
+        while mixer.music.get_busy():
+            time.sleep(1)
+        mixer.music.unload()
+        os.remove(speech_file_path)
+        return "done"
+    else:
+        return "not done"
 
 def check_if_asked_question():
     text =  (client.beta.threads.messages.list(thread_id=thread.id)).data[0].content[0].text.value
