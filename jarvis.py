@@ -6,13 +6,15 @@ import spot
 
 
 if __name__ == "__main__":
+    past_response = ""
     current_text = ""
     recorder = AudioToTextRecorder(spinner=False, model="small.en", language="en", post_speech_silence_duration =0.4, silero_sensitivity = 0.4)
     recorder.stop()
-    hot_words = ["jarvis", "computer", "okay", "travis", "drivers", "driver"]
+    hot_words = ["jarvis", "computer", "okay", "travis", "drivers", "driver", "java"]
     abort_Words = ["abort", "cancel", "shutdown", "terminate", "shut down", "power off", "power down"]
     noise_words = ["you.", "um", "uh", "...", "you"]
     skip_hot_word_check = False
+    last_response = ""
     assist.TTS("Hi Haider, how can I help you today?  ")
     print("Say something...")
     while True:
@@ -34,6 +36,10 @@ if __name__ == "__main__":
                     if "driver" in current_text.lower():
                         current_text = current_text.replace("driver", "jarvis")
                         current_text = current_text.replace("Driver", "Jarvis")
+                    if "java" in current_text.lower():
+                        current_text = current_text.replace("java", "jarvis")
+                        current_text = current_text.replace("Java", "Jarvis")
+
 
                     #make sure there is text
                     if current_text:
@@ -45,16 +51,18 @@ if __name__ == "__main__":
                         print("User: " + current_text)
                         response = assist.ask_question_memory(current_text)
                         print(response)
-                        proccessedResponse = response
+                        speech = response.split("#")[0]
+                        done = assist.TTS(tools.remove_delimited_text(speech))
                         if len(response.split("#")) > 1:
                             command = response.split("#")[1]
-                            proccessedResponse = tools.parse_command(command, current_text)
+                            proccessedResponse = tools.parse_command(command, current_text, past_response)
                         
-                        speech = response.split("#")[0]
-                        done = assist.TTS(speech)
+
                         skip_hot_word_check = assist.check_if_asked_question()
+                        past_response = response
                         
                         recorder.start()
+                        print("Your Turn: ")
 
 
 

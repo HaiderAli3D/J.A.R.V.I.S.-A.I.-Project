@@ -9,12 +9,12 @@ from datetime import datetime
 #https://platform.openai.com/playground/assistants
 
 api_key = os.getenv("JARVISAI_OPENAI_KEY")
-client = OpenAI(api_key = api_key,
-                default_headers={"OpenAI-Beta": "assistants=v2"})
+client = OpenAI(api_key = api_key)
+
 mixer.init()
 
 assistant_id = "asst_V3267AfQigL9SEsWJQ4zdHmN"
-thread_id = "thread_HChX8Kr7v3PKq1KpiPYh3ccy"
+thread_id = "thread_MJmgLmq8XeA2IFyCzNPiK5NY"
 
 # Retrieve the assistant and thread
 assistant = client.beta.assistants.retrieve(assistant_id)
@@ -34,19 +34,26 @@ def delete_all_uploaded_images():
 
 def upload_image(image_path, purpose, user_text):
     if purpose.lower() == "screenshot": 
-        upload_text = ("This is a screenshot of my screen given to you because you used the command #screenshot. You have permision to use this screenshot as you need. You have the ability to analyse the image. Use this image to answer this question from me-  " + user_text + " ")
+        upload_text = ("Use this image to response to this message from me-  " + user_text + " ")
+        #This is a screenshot of my screen given to you because you used the command #screenshot. You have permision to use this screenshot as you need. You have the ability to analyse the image. 
     elif purpose.lower() == "camera":
         upload_text = ("Here's a photo from my webcam - use it to answer this - " + user_text)
     elif purpose.lower() == "genral":
         upload_text = "this in an image the user has uploaded to you"
-        
+    
+    #print("image purpose detected")
+    
     # Upload the image file
     with open(image_path, "rb") as image_file:
         file_response = client.files.create(file=image_file, purpose="vision")
     file_id = file_response.id
 
+    #print("Image Saved")
+    
     with open(image_path, "rb") as image_file:
         base64_image = base64.b64encode(image_file.read()).decode('utf-8')
+    
+    #print("image encoeded")
     
     response = client.chat.completions.create(
     model="gpt-4o-mini",
@@ -68,6 +75,8 @@ def upload_image(image_path, purpose, user_text):
         }
     ],
     )    
+    
+    print("response recieved")
     
     session_uploaded_images.append(file_id)
     

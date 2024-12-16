@@ -9,16 +9,100 @@ import time
 from googlesearch import search
 from datetime import datetime 
 import pyautogui
+from PIL import Image
+
+def remove_delimited_text(input_text):
+    result = []  
+    current_pos = 0  
+    
+    while True:
+        start = input_text.find("{{{", current_pos)
+        
+        if start == -1:  
+            result.append(input_text[current_pos:])
+            break
+        
+        result.append(input_text[current_pos:start])
+        
+        end = input_text.find("}}}", start)
+        
+        if end == -1:  #
+            print(f"Warning: Unclosed delimiter at position {start}")
+            result.append(input_text[start:])
+            break
+        
+        current_pos = end + 3
+    
+    return ''.join(result)
+
+def extract_delimited_text(input_text):
+    current_pos = 0
+    extracted_texts = []
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    
+    files = os.listdir("saved_text")
+    number_of_files = len(files)
+    
+    output_file = os.path.join("saved_text", ("saved_text_file_" + str(number_of_files + 1) + "_" + str(timestamp) )) 
+    
+    while True:
+        # Find the opening delimiter
+        start = input_text.find("{{{", current_pos)
+        if start == -1:  # No more opening delimiters found
+            break
+            
+        # Find the closing delimiter
+        end = input_text.find("}}}", start + 3)
+        if end == -1:  # No matching closing delimiter
+            print(f"Warning: Found unopened tripple curly bracks at position {start}")
+            break
+            
+        # Extract the text between delimiters
+        extracted_text = input_text[start + 3:end]
+        extracted_texts.append(extracted_text)
+        
+        # Move position to after the closing delimiter
+        current_pos = end + 3
+    
+    # If we found any delimited text, save it to file
+    if extracted_texts:
+        try:
+            with open(output_file, "w", encoding="utf-8") as f:
+                # Join extracted texts with newlines between them
+                f.write("\n".join(extracted_texts))
+            assist.TTS("File successfully saved")
+            return True
+        except IOError as e:
+            print(f"Error writing to file: {e}")
+            return False
+    else:
+        print("No delimited text found in the input")
+        return False
 
 def take_screenshot():
     # Save the screenshot directly to the "screenshots" folder
     screenshot_path = "screenshots/screenshot.png"
+    compressed_path = "screenshots/screenshot_compressed.jpg"
     
     # Take the screenshot and save it
     screenshot = pyautogui.screenshot()
     screenshot.save(screenshot_path)
-    
+
+    # Resize the screenshot to lower resolution
+    width, height = screenshot.size
+    new_width, new_height = width // 2, height // 2  # Reduce by 50%
+    screenshot = screenshot.resize((new_width, new_height))
+
     print(f"Screenshot saved at: {screenshot_path}")
+    
+    img = Image.open(screenshot_path)
+    img = img.convert("RGB")  # Convert to RGB for JPEG compatibility
+    img.save(compressed_path, "JPEG", quality=70)  # Adjust quality (1-100)
+    
+    print(f"Screenshot saved and compressed at: {compressed_path}")
+    
+    
     return screenshot_path
 
 def perform_web_search(query, num_results=3):
@@ -58,13 +142,19 @@ async def get_weather(city_name):
 def imageSearch(query):
     GoogleCrawler = GoogleImageCrawler(storage = {"root_dir": r"./images"})
     GoogleCrawler.crawl(keyword = query, max_num = 1)
+    
+    time.sleep(4)
+    
     img = cv2.imread("images/000001.jpg", 0)
-    img_resized = resize_with_aspect_ratio(img, height = 800)
-    cv2.imshow("Image search result ", img_resized)
-    cv2.waitKey(5000)
-    cv2.destroyAllWindows()
+    try:
+        img_resized = resize_with_aspect_ratio(img, height = 800)
+        cv2.imshow("Image search result ", img_resized)
+        cv2.waitKey(5000)
+        cv2.destroyAllWindows()
+    except:
+        assist.TTS("Apologies Sir, I could not find a suitable picture for you.")
   
-def parse_command(command, user_text):
+def parse_command(command, user_text, response):
     if "weather" in command:
         weatherDescription = asyncio.run(get_weather("Wakefield"))
         query = "Weather information: " + str(weatherDescription)
@@ -73,13 +163,13 @@ def parse_command(command, user_text):
         assist.TTS(response)
         return response
     
-    if "imagesearch" in command.lower():
+    elif "imagesearch" in command.lower():
         files = os.listdir("./images")
         [os.remove(os.path.join("./images", f))for f in files]
         query = command.split("-")[1]
         imageSearch(query)
     
-    if "googlesearch" in command.lower():
+    elif "googlesearch" in command.lower():
         searchQuery = command.split("-")[1]
         AISearchAssistedPrompt = doGoogleSearch(searchQuery)
         response = assist.ask_question_memory(AISearchAssistedPrompt)
@@ -87,15 +177,47 @@ def parse_command(command, user_text):
         assist.TTS(response)
         return response
     
-    if "screenshot" in command.lower():
+    elif "screenshot" in command.lower():
         screenshot_file = take_screenshot()
         assist.TTS("analysing your screen")
         image_response = assist.upload_image(screenshot_file, "screenshot", user_text)
         print(image_response)
         assist.TTS(image_response)
+    
+    elif "saveimage" in command.lower():
+        extensions = ['.png', '.jpg', '.jpeg', '.webp']
         
+        files = os.listdir("saved_images")
+        number_of_files = len(files)
+        
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        
+        save_name = "saved_image" + str(number_of_files + 1) + "_" + str(timestamp)
+        
+        for ext in extensions:
+            try:
+                full_path = "images/000001" + ext 
+                img_to_save = Image.open(full_path)
+                img_to_save.save("saved_images/" + save_name + ext)
+            except (FileNotFoundError, Image.UnidentifiedImageError):
+                continue
+        
+        if img_to_save is None:
+            print("Can't find image to save")
+            assist.TTS("Apologies Sir, I could not find an image in cache to save.")
+        else:
+            print("Image saved to " + "saved_images/" + save_name + ext)
+            assist.TTS("Certainly Sir, I have saved that image for you.")
     
-    
+    elif "savetext" in command.lower():
+        extract_delimited_text(response)
+        
+
+
+
+
+
+
     ######### spotify commands ##########
     if ("play" in command) and ("music" in command):
         spot.start_music()
@@ -126,5 +248,3 @@ def parse_command(command, user_text):
         return response
     
     
-
-#search("cat")
