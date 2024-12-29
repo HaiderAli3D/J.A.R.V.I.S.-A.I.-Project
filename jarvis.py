@@ -3,14 +3,16 @@ import assist
 import time
 import tools
 import spot
+from pynput.keyboard import Key,Controller
 
 
 if __name__ == "__main__":
+    keyboard = Controller()
     past_response = ""
     current_text = ""
-    recorder = AudioToTextRecorder(spinner=False, model="small.en", language="en", post_speech_silence_duration =0.4, silero_sensitivity = 0.4)
+    recorder = AudioToTextRecorder(spinner=False, model="small.en", language="en", post_speech_silence_duration =0.4, silero_sensitivity = 0.2)
     recorder.stop()
-    hot_words = ["jarvis", "computer", "okay", "travis", "drivers", "driver", "java"]
+    hot_words = ["jarvis", "computer", "travis", "drivers", "driver", "java"]
     abort_Words = ["abort", "cancel", "shutdown", "terminate", "shut down", "power off", "power down"]
     noise_words = ["you.", "um", "uh", "...", "you"]
     skip_hot_word_check = False
@@ -20,6 +22,12 @@ if __name__ == "__main__":
     while True:
         current_text = recorder.text()
         print(current_text)
+        if "volume up" in current_text.lower():
+            tools.volumeUp(keyboard)
+            print("this happened")
+        elif "volume down" in current_text.lower():
+            tools.volumeDown(keyboard)
+            print("the other this happened")
         if any(abortWord in current_text.lower() for abortWord in abort_Words):
             assist.shutdown_cleanup()
             assist.TTS("Goodbye Sir")
@@ -40,11 +48,11 @@ if __name__ == "__main__":
                         current_text = current_text.replace("java", "jarvis")
                         current_text = current_text.replace("Java", "Jarvis")
 
-
                     #make sure there is text
                     if current_text:
                         if current_text.strip().lower() in noise_words:
                             continue
+                                 
                         recorder.stop()
                         #get time
                         current_text = current_text + " " + time.strftime("%Y-%m-%d %H-%M-%S")

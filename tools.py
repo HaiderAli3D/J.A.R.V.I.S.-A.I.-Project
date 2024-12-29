@@ -10,6 +10,19 @@ from googlesearch import search
 from datetime import datetime 
 import pyautogui
 from PIL import Image
+from pynput.keyboard import Key,Controller
+
+def volumeUp(keyboard):
+    for i in range(8):
+        keyboard.press(Key.media_volume_up)
+        keyboard.release(Key.media_volume_up)
+        time.sleep(0.06)
+
+def volumeDown(keyboard):
+    for i in range(8):
+        keyboard.press(Key.media_volume_down)
+        keyboard.release(Key.media_volume_down)
+        time.sleep(0.06)
 
 def remove_delimited_text(input_text):
     result = []  

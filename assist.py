@@ -14,7 +14,7 @@ client = OpenAI(api_key = api_key)
 mixer.init()
 
 assistant_id = "asst_V3267AfQigL9SEsWJQ4zdHmN"
-thread_id = "thread_MJmgLmq8XeA2IFyCzNPiK5NY"
+thread_id = "thread_Y1JQI9CnfG5jpHc7ytJAl9sK"
 
 # Retrieve the assistant and thread
 assistant = client.beta.assistants.retrieve(assistant_id)
@@ -34,7 +34,7 @@ def delete_all_uploaded_images():
 
 def upload_image(image_path, purpose, user_text):
     if purpose.lower() == "screenshot": 
-        upload_text = ("Use this image to response to this message from me-  " + user_text + " ")
+        upload_text = ("I have attached an image, respond to this message -  " + user_text + " ")
         #This is a screenshot of my screen given to you because you used the command #screenshot. You have permision to use this screenshot as you need. You have the ability to analyse the image. 
     elif purpose.lower() == "camera":
         upload_text = ("Here's a photo from my webcam - use it to answer this - " + user_text)
@@ -100,6 +100,7 @@ def ask_question_memory(question):
     return messages.data[0].content[0].text.value
 
 def generate_tts(sentence, speech_file_path):
+    print("TTS started")
     response = client.audio.speech.create(model="tts-1", voice="echo", input = sentence, speed = 1.4)
     response.stream_to_file(speech_file_path)
     return str(speech_file_path)
